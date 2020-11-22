@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head> 
+<meta charset="utf-8"> 
+<title>自定义横向柱状图</title> 
+</head>
+<body>
+	<div style='height:500px;width:100%;margin:0 auto;text-align: center;padding-top: 300px;'>
+		<canvas id="myCanvas" width="350" height="60" style="margin:0 auto;">
+			您的浏览器不支持 HTML5 canvas 标签。
+			</canvas>
+	</div>
+
+<script>
+	let myCanvas =document.getElementById("myCanvas");
+	let ctx=myCanvas.getContext("2d");
+	/*
+	设备像素比
+	*/
+	let ratio = getPixelRatio(ctx); 
+	/*
+	 设置容器宽高
+	*/
+	myCanvas.style.width = myCanvas.width + 'px';
+	myCanvas.style.height = myCanvas.height + 'px';
+	/*
+	 设置画布大小
+	*/
+	myCanvas.width = myCanvas.width * ratio;
+	myCanvas.height = myCanvas.height * ratio;
+
+	/*
+	 圆弧半径
+	*/
+	let r = 4*ratio
+	/*
+	 矩形高度
+	*/
+	let  height = 20*ratio
+	/*
+	  绘制起始坐标
+	*/
+	let x = 20*ratio
+	let y = 20*ratio
+	/* 
+	  柱子之间的间隔
+	*/
+	let d = 4*ratio
+
+	/* 
+	  百分比
+	*/
+	let percnet = 66
+
+	/* 
+	  百分比字体颜色
+	*/
+	let percnetColor = 'yellowgreen'
+
+	/* 
+	  百分比字号字体
+	*/
+	let percnetFont = '20px sans-serif'
+
+	/* 
+	  圆柱总数
+	*/
+	let  pillarCount = 20
+
+	/* 
+	   百分比的位置 x 坐标
+	*/
+    let textPlace =  x + (d + 2*r) * pillarCount + 20 * ratio
+	/*
+	  计算出带颜色的柱子个数
+	  向下取整
+	*/
+	let  activePillarCount = Math.floor(pillarCount*percnet/100)
+	console.log(activePillarCount,'activePillarCount')
+    /*
+	  渐变起始颜色
+	*/
+	let startColor = "#FF6666"
+	let endColor = "#66FF66"
+	 /*
+	  每个柱子对应的颜色
+	*/
+	let gradualColor=fColorGradualChange(startColor,endColor,pillarCount)
+    
+	for (let i = 0; i < pillarCount; i++){
+		ctx.beginPath();
+			/*
+			arc 方法创建弧/曲线（用于创建圆或部分圆）
+			画上圆弧
+			*/
+		ctx.arc(x + (d + 2*r) * i, y, r, 0, 180, false);
+			/*
+			判断在不在上色范围之内
+			*/
+		if(i < activePillarCount){
+			/*
+			填充对应的颜色
+			*/
+			ctx.fillStyle = gradualColor[i];
+		}else{
+			/*
+			  不在上色范围内 默认上色 #cccccc
+			*/
+			ctx.fillStyle = '#cccccc';
+		}
+			/*
+			设置笔触的颜色
+			*/
+		ctx.strokeStyle = gradualColor[i];
+			/*
+			填充当前的图像
+			*/
+		ctx.fill();
+		  	/*
+			 绘制路径
+			*/
+		ctx.stroke();
+		    /*
+			 下圆弧 
+			*/
+		ctx.beginPath();
+		ctx.arc(x+ (d + 2*r) * i, y + height  ,r, 180, 0, true);
+		ctx.strokeStyle = 'white';
+		ctx.fill();
+		ctx.closePath();
+		ctx.stroke();
+		ctx.beginPath();
+		   /*
+		     fillRect 
+			 绘制“已填色”的矩形。默认的填充颜色是黑色。
+			 矩形填充
+		   */
+		ctx.fillRect(x - r + (d + 2*r) * i,y ,2*r,height)
+	}
+	ctx.fillStyle = percnetColor;
+	ctx.font = percnetFont;
+	ctx.fillText(percnet+"%",textPlace,(height+2*r)/2+y)
+
+
+	/*
+	获取设备像素比
+	*/
+	function getPixelRatio (context) {
+		let backingStore = context.backingStorePixelRatio ||
+			context.webkitBackingStorePixelRatio ||
+			context.mozBackingStorePixelRatio ||
+			context.msBackingStorePixelRatio ||
+			context.oBackingStorePixelRatio ||
+			context.backingStorePixelRatio || 1;
+		return (window.devicePixelRatio || 1) / backingStore;
+	}
+
+
+	/**
+	*   颜色渐变
+	*   num：颜色个数
+	*/
+	function fColorGradualChange(startColor, endColor, num) {
+		let rgb = /^rgb|RGB\((([0-9]|[1-9]\d|1\d\d|2([0-4]\d|5[0-5])),){2}([0-9]|[1-9]\d|1\d\d|2([0-4]\d|5[0-5]))\)$/;    //rgb
+		let hex = /(^#[0-9A-F]{6}$)|(^#[0-9A-F]{3}$)/i; //16进制
+		//颜色预处理
+		let startRGB, endRGB;
+		if (hex.test(startColor)) {
+			startRGB = fAnalysisRGB(startColor);
+		} else if (rgb.test(startColor)) {
+			startRGB = startColor.substring(3, 15).split(',');
+		}
+		if (hex.test(endColor)) {
+			endRGB = fAnalysisRGB(endColor);
+		} else if (rgb.test(startColor)) {
+			endRGB = endColor.substring(3, 15).split(',');
+		}
+		let startR = startRGB[0], startG = startRGB[1], startB = startRGB[2];
+		let endR = endRGB[0], endG = endRGB[1], endB = endRGB[2];
+	
+		let sR = (endR - startR) / num;
+		let sG = (endG - startG) / num;
+		let sB = (endB - startB) / num;
+	
+		let colors = [];
+		for (let i = 0; i < num; i++) {
+			colors.push(fColorToHex(parseInt((sR * i + startR)), parseInt((sG * i + startG)), parseInt((sB * i + startB))));
+		}
+		return colors ;
+	}
+	
+	
+	/**
+	*   解析rgb格式
+	*/
+	function fAnalysisRGB(color) {
+		let colorData = color.toLowerCase().substring(1, color.length);
+		let colors= [];
+		colors.push(parseInt(colorData.substring(0, 2), 16))
+		colors.push(parseInt(colorData.substring(2, 4), 16))
+		colors.push(parseInt(colorData.substring(4, 6), 16))
+		return colors;
+	}
+	
+	/**
+	*   rgb转hex
+	*/
+	function fColorToHex(r, g, b) {
+		let hex = "#" + fAddZero(r.toString(16)) + fAddZero(g.toString(16)) + fAddZero(b.toString(16));
+		return hex;
+	}
+	
+	/**
+	*   加0补位
+	*/
+	function fAddZero(v) {
+		let newv = "00" + v;
+		return newv.substring(newv.length - 2, newv.length);
+	}
+</script> 
+
+</body>
+<style>
+	aa{
+		color: rgb(f,f,f);
+	}
+</style>
+</html>
